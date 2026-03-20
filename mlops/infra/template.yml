@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simple MLOps PoC - S3 input, Lambda processing, S3 output
+
+Parameters:
+  InputBucketName:
+    Type: String
+  OutputBucketName:
+    Type: String
+
+Resources:
+  InputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref InputBucketName
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref OutputBucketName
+
+  MlopsProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mlops-poc-processor
+      CodeUri: ../src
+      Handler: handler.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          OUTPUT_BUCKET: !Ref OutputBucket
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub arn:aws:s3:::${InputBucket}/*
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub arn:aws:s3:::${OutputBucket}/*
+
+Outputs:
+  InputBucketName:
+    Value: !Ref InputBucket
+
+  OutputBucketName:
+    Value: !Ref OutputBucket
+
+  FunctionName:
+    Value: !Ref MlopsProcessorFunction

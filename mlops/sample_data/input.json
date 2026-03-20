@@ -1,0 +1,6 @@
+{
+  "record_id": 123,
+  "customer": "demo-user",
+  "amount": 42.5,
+  "status": "new"
+}
