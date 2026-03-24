@@ -1,0 +1,79 @@
+repo/
+  .github/
+    workflows/
+      terraform-plan.yml
+      terraform-apply.yml
+
+  docs/
+    discovery-one-pager.md
+    architecture-notes.md
+
+  infra/
+    terraform/
+      envs/
+        dev/
+          main.tf
+          variables.tf
+          outputs.tf
+          backend.tf
+          terraform.tfvars
+      modules/
+        s3/
+          main.tf
+          variables.tf
+          outputs.tf
+        iam/
+          main.tf
+          variables.tf
+          outputs.tf
+        sagemaker_pipeline/
+          main.tf
+          variables.tf
+          outputs.tf
+
+  pipelines/
+    digital_twin_resilience/
+      pipeline.py
+      config.py
+      requirements.txt
+      steps/
+        processing/
+          processor.py
+          requirements.txt
+        training/
+          train.py
+          requirements.txt
+        evaluation/
+          evaluate.py
+          requirements.txt
+      utils/
+        io_utils.py
+        metrics.py
+        schemas.py
+
+  containers/
+    processing/
+      Dockerfile
+      requirements.txt
+    training/
+      Dockerfile
+      requirements.txt
+    evaluation/
+      Dockerfile
+      requirements.txt
+
+  data/
+    synthetic/
+      generate_synthetic_data.py
+      sample_input.csv
+
+  tests/
+    unit/
+      test_config.py
+      test_metrics.py
+      test_pipeline_compile.py
+    integration/
+      test_smoke_synthetic.py
+
+  Makefile
+  README.md
