@@ -1,0 +1,9 @@
+boto3
+sagemaker>=2.130,<3
+numpy
+pandas
+scikit-learn
+joblib
+python-dotenv
+pytz
+openai

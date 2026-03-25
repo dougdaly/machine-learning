@@ -1,0 +1,8 @@
+{
+  "request_type": "load_data",
+  "service": "entitlements",
+  "data_mode": "synthetic",
+  "start_date": "2024-06-02",
+  "end_date": "2024-06-10",
+  "output_prefix": "synthetic/raw"
+}

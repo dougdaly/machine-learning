@@ -1,0 +1,7 @@
+# Copy this file to terraform.tfvars for local use.
+# Do not commit terraform.tfvars with real account-specific values.
+
+aws_region                   = "us-west-2"
+project_name                 = "digital-twin-resilience"
+env                          = "dev"
+sagemaker_execution_role_arn = "replace-me"
