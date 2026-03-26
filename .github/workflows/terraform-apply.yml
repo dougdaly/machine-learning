@@ -49,17 +49,17 @@ jobs:
       - name: Generate SageMaker pipeline definition
         run: |
           python mlops/pipelines/digital_twin_resilience/pipeline.py
-	env:
-	  AWS_REGION: ${{ env.AWS_REGION }}
-	  SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_EXECUTION_ROLE_ARN }}
-	  INPUT_BUCKET: ${{ vars.INPUT_BUCKET }}
-	  OUTPUT_BUCKET: ${{ vars.OUTPUT_BUCKET }}
-	  PIPELINE_NAME: ${{ env.PIPELINE_NAME }}
-	  PIPELINE_MODE: ${{ env.PIPELINE_MODE }}
-	  LLM_PROVIDER: ${{ env.LLM_PROVIDER }}
-	  PROCESSING_INSTANCE_TYPE_DEFAULT: ${{ env.PROCESSING_INSTANCE_TYPE_DEFAULT }}
-	  TRAINING_INSTANCE_TYPE_DEFAULT: ${{ env.TRAINING_INSTANCE_TYPE_DEFAULT }}
-	  EVALUATION_INSTANCE_TYPE_DEFAULT: ${{ env.EVALUATION_INSTANCE_TYPE_DEFAULT }}
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_EXECUTION_ROLE_ARN }}
+          INPUT_BUCKET: ${{ vars.INPUT_BUCKET }}
+          OUTPUT_BUCKET: ${{ vars.OUTPUT_BUCKET }}
+          PIPELINE_NAME: ${{ env.PIPELINE_NAME }}
+          PIPELINE_MODE: ${{ env.PIPELINE_MODE }}
+          LLM_PROVIDER: ${{ env.LLM_PROVIDER }}
+          PROCESSING_INSTANCE_TYPE_DEFAULT: ${{ env.PROCESSING_INSTANCE_TYPE_DEFAULT }}
+          TRAINING_INSTANCE_TYPE_DEFAULT: ${{ env.TRAINING_INSTANCE_TYPE_DEFAULT }}
+          EVALUATION_INSTANCE_TYPE_DEFAULT: ${{ env.EVALUATION_INSTANCE_TYPE_DEFAULT }}
           DEFAULT_BUCKET: ${{ secrets.SAGEMAKER_DEFAULT_BUCKET }}
 
       - name: Terraform init
