@@ -1,5 +1,14 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+mlops/infra/terraform/envs/dev/terraform.tfvars
+__pycache__/
+*.pyc
 .env
+<<<<<<< Updated upstream
 terraform.tfvars
 .terraform/
 *.tfstate
 *.tfstate.*
+=======
+>>>>>>> Stashed changes
