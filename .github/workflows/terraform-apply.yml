@@ -22,6 +22,12 @@ jobs:
     env:
       AWS_REGION: us-west-2
       TF_WORKING_DIR: mlops/infra/terraform/envs/dev
+      PIPELINE_NAME: digital-twin-resilience-dev-pipeline
+      PIPELINE_MODE: stub
+      LLM_PROVIDER: openai
+      PROCESSING_INSTANCE_TYPE_DEFAULT: ml.t3.medium
+      TRAINING_INSTANCE_TYPE_DEFAULT: ml.t3.medium
+      EVALUATION_INSTANCE_TYPE_DEFAULT: ml.t3.medium
 
     steps:
       - name: Checkout code
