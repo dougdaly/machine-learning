@@ -79,7 +79,9 @@ jobs:
 
       - name: Terraform plan
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform plan -out=tfplan
+        env:
+          TF_VAR_sagemaker_execution_role_arn: ${{ secrets.SAGEMAKER_EXECUTION_ROLE_ARN }}
+        run: terraform plan -input=false -out=tfplan
 
       - name: Upload tfplan artifact
         uses: actions/upload-artifact@v4
