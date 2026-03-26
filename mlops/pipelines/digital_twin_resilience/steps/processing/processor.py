@@ -1,17 +1,19 @@
 import json
 from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
 
 
-INPUT_DIR = Path("/opt/ml/processing/input")
-CONFIG_DIR = Path("/opt/ml/processing/config")
+BASE_DIR = Path(os.environ.get("PROCESSING_BASE_DIR", "/opt/ml/processing"))
 
-OUTPUT_TRAIN_DIR = Path("/opt/ml/processing/output/train")
-OUTPUT_VALIDATION_DIR = Path("/opt/ml/processing/output/validation")
-OUTPUT_TEST_DIR = Path("/opt/ml/processing/output/test")
+INPUT_DIR = BASE_DIR / "input"
+CONFIG_DIR = BASE_DIR / "config"
 
+OUTPUT_TRAIN_DIR = BASE_DIR / "output" / "train"
+OUTPUT_VALIDATION_DIR = BASE_DIR / "output" / "validation"
+OUTPUT_TEST_DIR = BASE_DIR / "output" / "test"
 
 def load_request_config() -> dict:
     request_path = CONFIG_DIR / "request.json"
@@ -60,7 +62,6 @@ def make_synthetic_data(
 
     return df
 
-
 def load_input_data(start_date: str = None, end_date: str = None) -> pd.DataFrame:
     csv_files = sorted(INPUT_DIR.glob("*.csv"))
 
@@ -73,12 +74,30 @@ def load_input_data(start_date: str = None, end_date: str = None) -> pd.DataFram
         end_ts = pd.to_datetime(end_date)
 
         for csv_file in csv_files:
-            df = pd.read_csv(csv_file)
-
-            if "timestamp" not in df.columns:
+            try:
+                df = pd.read_csv(csv_file)
+            except pd.errors.EmptyDataError:
+                print(f"Skipping empty CSV file: {csv_file}")
+                continue
+            except Exception as e:
+                print(f"Skipping unreadable CSV file {csv_file}: {e}")
                 continue
 
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            if df.empty:
+                print(f"Skipping CSV with no rows: {csv_file}")
+                continue
+
+            if "timestamp" not in df.columns:
+                print(f"Skipping CSV without timestamp column: {csv_file}")
+                continue
+
+            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+            df = df.dropna(subset=["timestamp"])
+
+            if df.empty:
+                print(f"Skipping CSV with invalid timestamp values: {csv_file}")
+                continue
+
             mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
             filtered_df = df.loc[mask].copy()
 
@@ -87,11 +106,28 @@ def load_input_data(start_date: str = None, end_date: str = None) -> pd.DataFram
                 print(f"Found input file: {csv_file} with data in date range")
                 return filtered_df
 
-        print("No input CSV found with data in the specified date range. Generating synthetic data.")
+        print("No usable input CSV found in the specified date range. Generating synthetic data.")
         return make_synthetic_data(start_date=start_date, end_date=end_date)
 
-    print(f"Found input file: {csv_files[0]}")
-    return pd.read_csv(csv_files[0])
+    for csv_file in csv_files:
+        try:
+            df = pd.read_csv(csv_file)
+        except pd.errors.EmptyDataError:
+            print(f"Skipping empty CSV file: {csv_file}")
+            continue
+        except Exception as e:
+            print(f"Skipping unreadable CSV file {csv_file}: {e}")
+            continue
+
+        if df.empty:
+            print(f"Skipping CSV with no rows: {csv_file}")
+            continue
+
+        print(f"Found input file: {csv_file}")
+        return df
+
+    print("No usable input CSV found. Generating synthetic data.")
+    return make_synthetic_data(start_date=start_date, end_date=end_date)
 
 
 def main() -> None:
@@ -127,4 +163,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("PROCESSING JOB FAILED")
+        print(str(e))
+        traceback.print_exc()
+        raise

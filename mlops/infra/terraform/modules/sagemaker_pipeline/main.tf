@@ -4,11 +4,6 @@ resource "aws_sagemaker_pipeline" "this" {
   role_arn              = var.pipeline_role_arn
 
   pipeline_definition = file(var.pipeline_definition_path)
-
-  tags = [
-    for k, v in var.tags : {
-      key   = k
-      value = v
-    }
-  ]
+  
+  tags = var.tags
 }

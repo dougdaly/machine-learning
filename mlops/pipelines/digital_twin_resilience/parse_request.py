@@ -8,6 +8,29 @@ import os
 import boto3
 from openai import OpenAI
 from request_schema import DataGenerationRequest, DataMode, ServiceName
+import argparse
+import dotenv
+
+dotenv.load_dotenv()
+
+def resolve_llm_provider(explicit_provider: str | None = None) -> str:
+    '''Determine which LLM provider to use based on the following precedence:
+        1. explicit_provider argument
+        2. LLM_PROVIDER environment variable
+        3. PIPELINE_MODE environment variable (if "full", use "bedrock")
+        4. default to "openai"'''
+    if explicit_provider:
+        return explicit_provider
+
+    pipeline_mode = os.environ.get("PIPELINE_MODE", "stub").strip().lower()
+    env_provider = os.environ.get("LLM_PROVIDER")
+    if env_provider:
+        return env_provider.strip().lower()
+
+    if pipeline_mode == "full":
+        return "bedrock"
+
+    return "openai"
 
 
 DATE_RANGE_PATTERN = re.compile(
@@ -49,11 +72,13 @@ def deterministic_parse(prompt: str) -> Optional[DataGenerationRequest]:
     )
 
 def openai_parse(prompt: str) -> DataGenerationRequest:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("Missing required environment variable: OPENAI_API_KEY")
+    client = OpenAI(api_key=api_key)
     model = os.environ.get("OPENAI_MODEL")
     if not model:
         raise ValueError("Missing required environment variable: OPENAI_MODEL")
-
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     schema = {
         "name": "data_generation_request",
@@ -185,7 +210,8 @@ def bedrock_parse(prompt: str) -> DataGenerationRequest:
     payload = tool_use_blocks[0]["toolUse"]["input"]
     return DataGenerationRequest(**payload)
 
-def parse_request(prompt: str, provider: str = "deterministic") -> DataGenerationRequest:
+def parse_request(prompt: str, provider: str | None = None) -> DataGenerationRequest:
+    provider = resolve_llm_provider(provider)
     if provider == "openai":
         return openai_parse(prompt)
     if provider == "bedrock":
@@ -194,8 +220,8 @@ def parse_request(prompt: str, provider: str = "deterministic") -> DataGeneratio
         return deterministic_parse(prompt)
     raise ValueError(f"Unknown provider: {provider}")
 
-def write_request_json(prompt: str, output_path: str, use_llm: bool = False) -> Path:
-    parsed = parse_request(prompt, use_llm=use_llm)
+def write_request_json(prompt: str, output_path: str, provider: str | None = None) -> Path:
+    parsed = parse_request(prompt, provider=provider)
     out_path = Path(output_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(parsed.model_dump(), indent=2))
@@ -203,8 +229,34 @@ def write_request_json(prompt: str, output_path: str, use_llm: bool = False) -> 
 
 
 if __name__ == "__main__":
-    prompt = "Load example entitlements data for 6/2/2024-6/10/2024"
-    output_path = Path(__file__).resolve().parent / "request.json"
-    written = write_request_json(prompt=prompt, output_path=str(output_path), provider="openai")
-    print(f"Wrote request JSON to {written}")
-    print(written.read_text())
+    parser = argparse.ArgumentParser(description="Parse a natural-language request into request.json")
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        default="Load example entitlements data for 6/2/2024-6/10/2024",
+        help="Natural-language request to parse",
+    )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        choices=["deterministic", "openai", "bedrock"],
+        default=None,
+        help="Parsing backend to use. If omitted, resolved from PIPELINE_MODE/LLM_PROVIDER.",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=str(Path(__file__).resolve().parent / "request.json"),
+        help="Output path for request JSON",
+    )
+
+    args = parser.parse_args()
+
+    written = write_request_json(
+        prompt=args.prompt,
+        output_path=args.output,
+        provider=args.provider,
+    )
+
+    print(f"Wrote request JSON to {written}, using provider {args.provider}")
+    print(Path(written).read_text())

@@ -15,6 +15,12 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 import logging
+from config import (
+    PIPELINE_MODE,
+    PROCESSING_INSTANCE_TYPE_DEFAULT,
+    TRAINING_INSTANCE_TYPE_DEFAULT,
+    EVALUATION_INSTANCE_TYPE_DEFAULT,
+)
 
 logging.getLogger("sagemaker.workflow.utilities").setLevel(logging.ERROR)
 
@@ -24,6 +30,11 @@ def get_required_env(name: str) -> str:
         raise ValueError(f"Missing required environment variable: {name}")
     return value
 
+def resolve_pipeline_mode() -> str:
+    mode = os.environ.get("PIPELINE_MODE", "stub").strip().lower()
+    if mode not in {"stub", "full"}:
+        raise ValueError(f"Unsupported PIPELINE_MODE: {mode}")
+    return mode
 
 def get_pipeline(
     *,
@@ -43,6 +54,7 @@ def get_pipeline(
     )
 
     base_dir = Path(__file__).resolve().parent
+    pipeline_mode = resolve_pipeline_mode()
 
     input_data_uri = ParameterString(
         name="InputDataUri",
@@ -56,17 +68,17 @@ def get_pipeline(
 
     processing_instance_type = ParameterString(
         name="ProcessingInstanceType",
-        default_value="ml.m5.large",
+        default_value=PROCESSING_INSTANCE_TYPE_DEFAULT,
     )
 
     training_instance_type = ParameterString(
         name="TrainingInstanceType",
-        default_value="ml.m5.large",
+        default_value=TRAINING_INSTANCE_TYPE_DEFAULT,
     )
 
     evaluation_instance_type = ParameterString(
         name="EvaluationInstanceType",
-        default_value="ml.m5.large",
+        default_value=EVALUATION_INSTANCE_TYPE_DEFAULT,
     )
 
     processing_processor = ScriptProcessor(
@@ -74,7 +86,7 @@ def get_pipeline(
             framework="sklearn",
             region=region,
             version="1.2-1",
-            instance_type="ml.m5.large",
+            instance_type="ml.t3.medium",
         ),
         command=["python3"],
         role=role_arn,
@@ -125,24 +137,84 @@ def get_pipeline(
         output_path=f"s3://{output_bucket}/models/",
     )
 
-    step_train = TrainingStep(
-        name="TrainBaselineModel",
-        estimator=estimator,
-        inputs={
-            "train": TrainingInput(
-                s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
-                    "train"
-                ].S3Output.S3Uri,
-                content_type="text/csv",
+    if pipeline_mode == "full":
+        estimator = SKLearn(
+            entry_point="train.py",
+            source_dir=str(base_dir / "steps" / "training"),
+            role=role_arn,
+            instance_count=1,
+            instance_type=training_instance_type,
+            framework_version="1.2-1",
+            py_version="py3",
+            sagemaker_session=sagemaker_session,
+            output_path=f"s3://{output_bucket}/models/",
+        )
+
+        step_train = TrainingStep(
+            name="TrainBaselineModel",
+            estimator=estimator,
+            inputs={
+                "train": TrainingInput(
+                    s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
+                        "train"
+                    ].S3Output.S3Uri,
+                    content_type="text/csv",
+                ),
+                "validation": TrainingInput(
+                    s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
+                        "validation"
+                    ].S3Output.S3Uri,
+                    content_type="text/csv",
+                ),
+            },
+        )
+
+        model_input_s3_uri = step_train.properties.ModelArtifacts.S3ModelArtifacts
+
+    else:
+        training_processor = ScriptProcessor(
+            image_uri=sagemaker.image_uris.retrieve(
+                framework="sklearn",
+                region=region,
+                version="1.2-1",
+                instance_type="ml.t3.medium",
             ),
-            "validation": TrainingInput(
-                s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
-                    "validation"
-                ].S3Output.S3Uri,
-                content_type="text/csv",
-            ),
-        },
-    )
+            command=["python3"],
+            role=role_arn,
+            instance_count=1,
+            instance_type=training_instance_type,
+            sagemaker_session=sagemaker_session,
+        )
+
+        step_train = ProcessingStep(
+            name="TrainBaselineModel",
+            processor=training_processor,
+            inputs=[
+                ProcessingInput(
+                    source=step_process.properties.ProcessingOutputConfig.Outputs[
+                        "train"
+                    ].S3Output.S3Uri,
+                    destination="/opt/ml/processing/train",
+                ),
+                ProcessingInput(
+                    source=step_process.properties.ProcessingOutputConfig.Outputs[
+                        "validation"
+                    ].S3Output.S3Uri,
+                    destination="/opt/ml/processing/validation",
+                ),
+            ],
+            outputs=[
+                ProcessingOutput(
+                    output_name="model",
+                    source="/opt/ml/processing/model",
+                )
+            ],
+            code=str(base_dir / "steps" / "training" / "train.py"),
+        )
+
+        model_input_s3_uri = step_train.properties.ProcessingOutputConfig.Outputs[
+            "model"
+        ].S3Output.S3Uri
 
     evaluation_processor = ScriptProcessor(
         image_uri=sagemaker.image_uris.retrieve(
@@ -163,7 +235,7 @@ def get_pipeline(
         processor=evaluation_processor,
         inputs=[
             ProcessingInput(
-                source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+                source=model_input_s3_uri,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
