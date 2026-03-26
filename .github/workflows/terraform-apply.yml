@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'infra/terraform/**'
-      - 'pipelines/**'
+      - 'mlops/infra/terraform/**'
+      - 'mlops/pipelines/**'
       - '.github/workflows/terraform-plan.yml'
       - '.github/workflows/terraform-apply.yml'
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
 
     env:
       AWS_REGION: us-west-2
-      TF_WORKING_DIR: infra/terraform/envs/dev
+      TF_WORKING_DIR: mlops/infra/terraform/envs/dev
 
     steps:
       - name: Checkout code
@@ -44,11 +44,11 @@ jobs:
       - name: Install pipeline dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r pipelines/digital_twin_resilience/requirements.txt
+          pip install -r mlops/pipelines/digital_twin_resilience/requirements.txt
 
       - name: Generate SageMaker pipeline definition
         run: |
-          python pipelines/digital_twin_resilience/pipeline.py
+          python mlops/pipelines/digital_twin_resilience/pipeline.py
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_EXECUTION_ROLE_ARN }}
