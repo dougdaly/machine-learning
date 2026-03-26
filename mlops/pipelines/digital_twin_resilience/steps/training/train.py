@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import joblib
@@ -6,12 +5,18 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
-def main() -> None:
-    train_dir = Path(os.environ["SM_CHANNEL_TRAIN"])
-    model_dir = Path(os.environ["SM_MODEL_DIR"])
+TRAIN_DIR = Path("/opt/ml/processing/train")
+VALIDATION_DIR = Path("/opt/ml/processing/validation")
+MODEL_DIR = Path("/opt/ml/processing/model")
 
-    train_path = train_dir / "train.csv"
+
+def main() -> None:
+    train_path = TRAIN_DIR / "train.csv"
+    validation_path = VALIDATION_DIR / "validation.csv"
+
     print(f"Reading training data from {train_path}")
+    if validation_path.exists():
+        print(f"Validation data available at {validation_path}")
 
     df = pd.read_csv(train_path)
 
@@ -21,8 +26,8 @@ def main() -> None:
     model = LinearRegression()
     model.fit(X, y)
 
-    model_dir.mkdir(parents=True, exist_ok=True)
-    model_path = model_dir / "model.joblib"
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    model_path = MODEL_DIR / "model.joblib"
     joblib.dump(model, model_path)
 
     print(f"Saved model to {model_path}")
