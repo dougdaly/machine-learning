@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'mlops/infra/terraform/**'
+      - 'terraform/**'
       - 'mlops/pipelines/**'
       - '.github/workflows/terraform-plan.yml'
       - '.github/workflows/terraform-apply.yml'
@@ -21,7 +21,7 @@ jobs:
 
     env:
       AWS_REGION: us-west-2
-      TF_WORKING_DIR: mlops/infra/terraform/envs/dev
+      TF_WORKING_DIR: terraform/envs/dev
       PIPELINE_NAME: digital-twin-resilience-dev-pipeline
       PIPELINE_MODE: stub
       LLM_PROVIDER: openai
