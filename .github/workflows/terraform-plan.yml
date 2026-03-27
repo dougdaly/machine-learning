@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     paths:
-      - 'mlops/infra/terraform/**'
+      - 'terraform/**'
       - 'mlops/pipelines/**'
       - '.github/workflows/terraform-plan.yml'
       - '.github/workflows/terraform-apply.yml'
@@ -19,7 +19,7 @@ jobs:
 
     env:
       AWS_REGION: us-west-2
-      TF_WORKING_DIR: mlops/infra/terraform/envs/dev
+      TF_WORKING_DIR: terraform/envs/dev
       PIPELINE_MODE: stub
       PIPELINE_NAME: digital-twin-resilience-dev-pipeline
       LLM_PROVIDER: openai

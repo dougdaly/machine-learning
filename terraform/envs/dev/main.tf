@@ -30,6 +30,6 @@ module "sagemaker_pipeline" {
   project_name             = local.project_name
   env                      = local.env
   pipeline_role_arn        = var.sagemaker_execution_role_arn
-  pipeline_definition_path = "${path.module}/../../../../pipelines/digital_twin_resilience/pipeline_definition.json"
+  pipeline_definition_path = "${path.module}/../../../mlops/pipelines/digital_twin_resilience/pipeline_definition.json"
   tags                     = local.common_tags
 }
