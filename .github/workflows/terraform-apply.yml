@@ -72,6 +72,12 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
+      - name: Terraform state debug
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform workspace show
+          terraform state list || true
+
       - name: Terraform apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         env:
