@@ -2,49 +2,57 @@
 
 ## Description of directory tree elements
 
-**.github/workflows/**  
+**.github/workflows/**
 
-This is CI/CD only. It is not ML logic. GitHub Actions can authenticate to AWS via OIDC instead of long-lived secrets, which is the cleaner enterprise pattern.
+Deployment-oriented automation.
 
-- **terraform-plan.yml**: runs fmt/validate/plan on PRs
-- **terraform-apply.yml**: applies approved infra changes to dev, maybe later prod
+- **terraform-plan.yml**: generates the SageMaker pipeline definition, runs Terraform fmt/validate/plan on PRs
+- **terraform-apply.yml**: generates the SageMaker pipeline definition and applies approved infra changes to dev
 
-**infra/terraform/**  
+Current understanding: these workflows deploy/update infrastructure and the SageMaker pipeline definition, but do not themselves start pipeline execution or run Python tests.
 
-This is infrastructure only.
+**terraform/**
+
+Infrastructure only.
 
 - **envs/dev/**: environment-specific wiring
-- **modules/s3/**: buckets for raw, processed, model artifacts, evaluation outputs
+- **modules/s3/**: buckets for raw, processed, model artifacts, and evaluation outputs
 - **modules/iam/**: execution roles and policies
 - **modules/sagemaker_pipeline/**: Terraform resource for the SageMaker Pipeline
 
- Terraform has an aws_sagemaker_pipeline resource, so using Terraform for the pipeline object itself is a legitimate pattern, not a workaround.
+Terraform is used to provision/update the SageMaker pipeline resource in AWS.
 
+**mlops/pipelines/digital_twin_resilience/**
 
+Core pipeline orchestration and step logic.
 
-**pipelines/digital_twin_resilience/**  
-
-This is the ML workflow definition.
-
-- **pipeline.py**: defines the SageMaker Pipeline DAG
+- **pipeline.py**: defines the SageMaker Pipeline DAG and generates `pipeline_definition.json`
+- **start_pipeline.py**: starts a SageMaker pipeline execution, with optional parameter overrides
+- **check_pipeline_execution.py**: checks overall pipeline execution status and step-level status
 - **config.py**: pipeline parameters and defaults
-- **steps/processing/processor.py**: builds datasets or synthetic inputs
-- **steps/training/train.py**: trains a trivial baseline model first
-- **steps/evaluation/evaluate.py**: computes metrics and emits a JSON report
+- **steps/processing/processor.py**: generates synthetic data and writes train/validation/test outputs
+- **steps/training/train.py**: trains a trivial baseline model
+- **steps/evaluation/evaluate.py**: computes evaluation output / trivial metrics
 - **utils/**: shared helpers
 
- SageMaker Pipelines is a DAG of interconnected steps, and AWS explicitly supports Processing and Training steps in the pipeline definition.
+The current generated pipeline executes three main step scripts:
+- `processor.py`
+- `train.py`
+- `evaluate.py`
 
 **data/synthetic/**
 
-This is discovery-sprint fuel.
+Synthetic input support for the current stub workflow.
 
 - generate fake telemetry
-- define a graph-ish structure if needed
-- keep it tiny and boring
+- define a small graph-like structure if needed
+- support feasibility-stage testing without real production data
 
 **tests/**
 
-- **test_pipeline_compile.py**: proves the pipeline definition compiles
-- **test_smoke_synthetic.py**: one tiny end-to-end synthetic run
+Test area for compile/smoke validation.
 
+- **test_pipeline_compile.py**: intended to validate pipeline compilation
+- **test_smoke_synthetic.py**: intended to validate a tiny synthetic end-to-end flow
+
+Current understanding: these tests exist in the repo, but are not currently shown as part of the GitHub Actions workflows reviewed so far.
