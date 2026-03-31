@@ -3,77 +3,65 @@ repo/
     workflows/
       terraform-plan.yml
       terraform-apply.yml
-
-  docs/
-    discovery-one-pager.md
-    architecture-notes.md
-
-  infra/
-    terraform/
-      envs/
-        dev/
-          main.tf
-          variables.tf
-          outputs.tf
-          backend.tf
-          terraform.tfvars
-      modules/
-        s3/
-          main.tf
-          variables.tf
-          outputs.tf
-        iam/
-          main.tf
-          variables.tf
-          outputs.tf
-        sagemaker_pipeline/
-          main.tf
-          variables.tf
-          outputs.tf
-
-  pipelines/
-    digital_twin_resilience/
-      pipeline.py
-      config.py
-      requirements.txt
-      steps/
-        processing/
-          processor.py
-          requirements.txt
-        training/
-          train.py
-          requirements.txt
-        evaluation/
-          evaluate.py
-          requirements.txt
-      utils/
-        io_utils.py
-        metrics.py
-        schemas.py
-
-  containers/
-    processing/
-      Dockerfile
-      requirements.txt
-    training/
-      Dockerfile
-      requirements.txt
-    evaluation/
-      Dockerfile
-      requirements.txt
-
+  terraform/
+    envs/
+      dev/
+        backend.tf
+        main.tf
+        outputs.tf
+        terraform.tfstate
+        terraform.tfvars
+        variables.tf
+        README.md
+    modules/
+      s3/
+        main.tf
+        variables.tf
+        outputs.tf
+      iam/
+        main.tf
+        variables.tf
+        outputs.tf
+      sagemaker_pipeline/
+        main.tf
+        variables.tf
+        outputs.tf
+  mlops/
+    data/
+    docs/
+      discovery-one-pager.md
+      README.md
+    pipelines/
+      digital_twin_resilience/
+        check_pipeline_execution.py
+        config.py
+        create_pipeline.py
+        parse_request.py
+        pipeline_definition.json
+        pipeline.py
+        request_schema.py
+        request.json
+        requirements.txt
+        run_request_flow.py
+        show_pipeline_outputs.py
+        show_processing_logs.py
+        start_pipeline.py
+        steps/
+          processing/
+            processor.py
+          training/
+            train.py
+          evaluation/
+            evaluate.py
+        utils/
+          io_utils.py
+          metrics.py
+          schemas.py
   data/
     synthetic/
       generate_synthetic_data.py
       sample_input.csv
-
   tests/
-    unit/
-      test_config.py
-      test_metrics.py
-      test_pipeline_compile.py
-    integration/
-      test_smoke_synthetic.py
-
-  Makefile
+    bedrock_test.py
+    test_steps.py
   README.md

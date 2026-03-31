@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -299,6 +300,8 @@ if __name__ == "__main__":
 
     definition = pipeline.definition()
     out_path = Path(__file__).resolve().parent / "pipeline_definition.json"
-    out_path.write_text(definition)
+    with out_path.open("w", encoding="utf-8") as f:
+        json.dump(json.loads(definition), f, indent=2, sort_keys=False)
+        f.write("\n")
 
     print(f"Wrote pipeline definition to {out_path}")
