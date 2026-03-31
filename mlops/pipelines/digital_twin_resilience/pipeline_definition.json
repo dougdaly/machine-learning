@@ -1,1 +1,368 @@
-{"Version": "2020-12-01", "Metadata": {}, "Parameters": [{"Name": "InputDataUri", "Type": "String", "DefaultValue": "s3://dougdaly-mlops-poc-input-dev/synthetic/raw/"}, {"Name": "RequestConfigUri", "Type": "String", "DefaultValue": "s3://dougdaly-mlops-poc-input-dev/requests/request.json"}, {"Name": "ProcessingInstanceType", "Type": "String", "DefaultValue": "ml.t3.medium"}, {"Name": "TrainingInstanceType", "Type": "String", "DefaultValue": "ml.t3.medium"}, {"Name": "EvaluationInstanceType", "Type": "String", "DefaultValue": "ml.t3.medium"}], "PipelineExperimentConfig": {"ExperimentName": {"Get": "Execution.PipelineName"}, "TrialName": {"Get": "Execution.PipelineExecutionId"}}, "Steps": [{"Name": "ProcessSyntheticTelemetry", "Type": "Processing", "Arguments": {"ProcessingResources": {"ClusterConfig": {"InstanceType": {"Get": "Parameters.ProcessingInstanceType"}, "InstanceCount": 1, "VolumeSizeInGB": 30}}, "AppSpecification": {"ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3", "ContainerEntrypoint": ["python3", "/opt/ml/processing/input/code/processor.py"]}, "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops", "ProcessingInputs": [{"InputName": "input-1", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Parameters.InputDataUri"}, "LocalPath": "/opt/ml/processing/input", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "input-2", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Parameters.RequestConfigUri"}, "LocalPath": "/opt/ml/processing/config", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "code", "AppManaged": false, "S3Input": {"S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-26-15-41-58-624/input/code/processor.py", "LocalPath": "/opt/ml/processing/input/code", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}], "ProcessingOutputConfig": {"Outputs": [{"OutputName": "train", "AppManaged": false, "S3Output": {"S3Uri": {"Std:Join": {"On": "/", "Values": ["s3:/", "dougdaly-mlops-poc-output-dev", "digital-twin-resilience-dev-pipeline", {"Get": "Execution.PipelineExecutionId"}, "ProcessSyntheticTelemetry", "output", "train"]}}, "LocalPath": "/opt/ml/processing/output/train", "S3UploadMode": "EndOfJob"}}, {"OutputName": "validation", "AppManaged": false, "S3Output": {"S3Uri": {"Std:Join": {"On": "/", "Values": ["s3:/", "dougdaly-mlops-poc-output-dev", "digital-twin-resilience-dev-pipeline", {"Get": "Execution.PipelineExecutionId"}, "ProcessSyntheticTelemetry", "output", "validation"]}}, "LocalPath": "/opt/ml/processing/output/validation", "S3UploadMode": "EndOfJob"}}, {"OutputName": "test", "AppManaged": false, "S3Output": {"S3Uri": {"Std:Join": {"On": "/", "Values": ["s3:/", "dougdaly-mlops-poc-output-dev", "digital-twin-resilience-dev-pipeline", {"Get": "Execution.PipelineExecutionId"}, "ProcessSyntheticTelemetry", "output", "test"]}}, "LocalPath": "/opt/ml/processing/output/test", "S3UploadMode": "EndOfJob"}}]}}}, {"Name": "TrainBaselineModel", "Type": "Processing", "Arguments": {"ProcessingResources": {"ClusterConfig": {"InstanceType": {"Get": "Parameters.TrainingInstanceType"}, "InstanceCount": 1, "VolumeSizeInGB": 30}}, "AppSpecification": {"ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3", "ContainerEntrypoint": ["python3", "/opt/ml/processing/input/code/train.py"]}, "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops", "ProcessingInputs": [{"InputName": "input-1", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['train'].S3Output.S3Uri"}, "LocalPath": "/opt/ml/processing/train", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "input-2", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['validation'].S3Output.S3Uri"}, "LocalPath": "/opt/ml/processing/validation", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "code", "AppManaged": false, "S3Input": {"S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-26-15-41-58-843/input/code/train.py", "LocalPath": "/opt/ml/processing/input/code", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}], "ProcessingOutputConfig": {"Outputs": [{"OutputName": "model", "AppManaged": false, "S3Output": {"S3Uri": {"Std:Join": {"On": "/", "Values": ["s3:/", "dougdaly-mlops-poc-output-dev", "digital-twin-resilience-dev-pipeline", {"Get": "Execution.PipelineExecutionId"}, "TrainBaselineModel", "output", "model"]}}, "LocalPath": "/opt/ml/processing/model", "S3UploadMode": "EndOfJob"}}]}}}, {"Name": "EvaluateModel", "Type": "Processing", "Arguments": {"ProcessingResources": {"ClusterConfig": {"InstanceType": {"Get": "Parameters.EvaluationInstanceType"}, "InstanceCount": 1, "VolumeSizeInGB": 30}}, "AppSpecification": {"ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3", "ContainerEntrypoint": ["python3", "/opt/ml/processing/input/code/evaluate.py"]}, "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops", "ProcessingInputs": [{"InputName": "input-1", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Steps.TrainBaselineModel.ProcessingOutputConfig.Outputs['model'].S3Output.S3Uri"}, "LocalPath": "/opt/ml/processing/model", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "input-2", "AppManaged": false, "S3Input": {"S3Uri": {"Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['test'].S3Output.S3Uri"}, "LocalPath": "/opt/ml/processing/test", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}, {"InputName": "code", "AppManaged": false, "S3Input": {"S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-26-15-41-58-899/input/code/evaluate.py", "LocalPath": "/opt/ml/processing/input/code", "S3DataType": "S3Prefix", "S3InputMode": "File", "S3DataDistributionType": "FullyReplicated", "S3CompressionType": "None"}}], "ProcessingOutputConfig": {"Outputs": [{"OutputName": "evaluation", "AppManaged": false, "S3Output": {"S3Uri": {"Std:Join": {"On": "/", "Values": ["s3:/", "dougdaly-mlops-poc-output-dev", "digital-twin-resilience-dev-pipeline", {"Get": "Execution.PipelineExecutionId"}, "EvaluateModel", "output", "evaluation"]}}, "LocalPath": "/opt/ml/processing/evaluation", "S3UploadMode": "EndOfJob"}}]}}}]}
+{
+  "Version": "2020-12-01",
+  "Metadata": {},
+  "Parameters": [
+    {
+      "Name": "InputDataUri",
+      "Type": "String",
+      "DefaultValue": "s3://dougdaly-mlops-poc-input-dev/synthetic/raw/"
+    },
+    {
+      "Name": "RequestConfigUri",
+      "Type": "String",
+      "DefaultValue": "s3://dougdaly-mlops-poc-input-dev/requests/request.json"
+    },
+    {
+      "Name": "ProcessingInstanceType",
+      "Type": "String",
+      "DefaultValue": "ml.t3.medium"
+    },
+    {
+      "Name": "TrainingInstanceType",
+      "Type": "String",
+      "DefaultValue": "ml.t3.medium"
+    },
+    {
+      "Name": "EvaluationInstanceType",
+      "Type": "String",
+      "DefaultValue": "ml.t3.medium"
+    }
+  ],
+  "PipelineExperimentConfig": {
+    "ExperimentName": {
+      "Get": "Execution.PipelineName"
+    },
+    "TrialName": {
+      "Get": "Execution.PipelineExecutionId"
+    }
+  },
+  "Steps": [
+    {
+      "Name": "ProcessSyntheticTelemetry",
+      "Type": "Processing",
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": {
+              "Get": "Parameters.ProcessingInstanceType"
+            },
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 30
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3",
+          "ContainerEntrypoint": [
+            "python3",
+            "/opt/ml/processing/input/code/processor.py"
+          ]
+        },
+        "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops",
+        "ProcessingInputs": [
+          {
+            "InputName": "input-1",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Parameters.InputDataUri"
+              },
+              "LocalPath": "/opt/ml/processing/input",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "input-2",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Parameters.RequestConfigUri"
+              },
+              "LocalPath": "/opt/ml/processing/config",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "code",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-31-18-55-49-990/input/code/processor.py",
+              "LocalPath": "/opt/ml/processing/input/code",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "train",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3:/",
+                      "dougdaly-mlops-poc-output-dev",
+                      "digital-twin-resilience-dev-pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "ProcessSyntheticTelemetry",
+                      "output",
+                      "train"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/train",
+                "S3UploadMode": "EndOfJob"
+              }
+            },
+            {
+              "OutputName": "validation",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3:/",
+                      "dougdaly-mlops-poc-output-dev",
+                      "digital-twin-resilience-dev-pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "ProcessSyntheticTelemetry",
+                      "output",
+                      "validation"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/validation",
+                "S3UploadMode": "EndOfJob"
+              }
+            },
+            {
+              "OutputName": "test",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3:/",
+                      "dougdaly-mlops-poc-output-dev",
+                      "digital-twin-resilience-dev-pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "ProcessSyntheticTelemetry",
+                      "output",
+                      "test"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/test",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Name": "TrainBaselineModel",
+      "Type": "Processing",
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": {
+              "Get": "Parameters.TrainingInstanceType"
+            },
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 30
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3",
+          "ContainerEntrypoint": [
+            "python3",
+            "/opt/ml/processing/input/code/train.py"
+          ]
+        },
+        "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops",
+        "ProcessingInputs": [
+          {
+            "InputName": "input-1",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['train'].S3Output.S3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/train",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "input-2",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['validation'].S3Output.S3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/validation",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "code",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-31-18-55-50-253/input/code/train.py",
+              "LocalPath": "/opt/ml/processing/input/code",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "model",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3:/",
+                      "dougdaly-mlops-poc-output-dev",
+                      "digital-twin-resilience-dev-pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "TrainBaselineModel",
+                      "output",
+                      "model"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/model",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Name": "EvaluateModel",
+      "Type": "Processing",
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": {
+              "Get": "Parameters.EvaluationInstanceType"
+            },
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 30
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": "246618743249.dkr.ecr.us-west-2.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3",
+          "ContainerEntrypoint": [
+            "python3",
+            "/opt/ml/processing/input/code/evaluate.py"
+          ]
+        },
+        "RoleArn": "arn:aws:iam::159535637196:role/SageMakerExecutionRole-mlops",
+        "ProcessingInputs": [
+          {
+            "InputName": "input-1",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Steps.TrainBaselineModel.ProcessingOutputConfig.Outputs['model'].S3Output.S3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/model",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "input-2",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Steps.ProcessSyntheticTelemetry.ProcessingOutputConfig.Outputs['test'].S3Output.S3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/test",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "code",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": "s3://dougdaly-mlops-poc-output-dev/sagemaker-scikit-learn-2026-03-31-18-55-50-315/input/code/evaluate.py",
+              "LocalPath": "/opt/ml/processing/input/code",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "evaluation",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3:/",
+                      "dougdaly-mlops-poc-output-dev",
+                      "digital-twin-resilience-dev-pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "EvaluateModel",
+                      "output",
+                      "evaluation"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/evaluation",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
