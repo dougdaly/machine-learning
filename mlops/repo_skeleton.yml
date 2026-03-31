@@ -30,7 +30,7 @@ repo/
     data/
     docs/
       discovery-one-pager.md
-      README.md
+      RUNBOOK.md
     pipelines/
       digital_twin_resilience/
         check_pipeline_execution.py
@@ -65,3 +65,4 @@ repo/
     bedrock_test.py
     test_steps.py
   README.md
+  PROJECT_STATUS.md
